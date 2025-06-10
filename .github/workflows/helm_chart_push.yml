@@ -25,31 +25,46 @@ jobs:
 
       - name: Make changes to gnoswap-helm-chart Repo
         run: |
+          set -e
           cd gnoswap-helm-chart/
-          if git ls-remote --exit-code --heads origin "${{ inputs.env }}-${{ inputs.app-name }}"; then
-            echo "Branch ${{ inputs.env }}-${{ inputs.app-name }} exists."
-            git checkout -b deploy-${{ github.run_id }}-${{ inputs.app-name }} origin/${{ inputs.env }}-${{ inputs.app-name }}
+
+          DEPLOY="deploy-${{ github.run_id }}-${{ inputs.app-name }}-${{ inputs.env }}"
+          TARGET="${{ inputs.env }}-${{ inputs.app-name }}"
+
+          if git ls-remote --exit-code --heads origin "$TARGET"; then
+            git checkout -b "$DEPLOY" "origin/$TARGET"
           else
-            echo "Branch ${{ inputs.env }}-${{ inputs.app-name }} does not exist. Creating from ${{ inputs.env }}."
-            git checkout -b ${{ inputs.env }}-${{ inputs.app-name }} origin/${{ inputs.env }}
-            git push -u origin ${{ inputs.env }}-${{ inputs.app-name }}
-            git checkout -b deploy-${{ github.run_id }}-${{ inputs.app-name }} origin/${{ inputs.env }}-${{ inputs.app-name }}
+            git checkout -b "$TARGET" "origin/${{ inputs.env }}"
+            git push -u origin "$TARGET"
+            git checkout -b "$DEPLOY" "origin/$TARGET"
           fi
+
           cd ${{ inputs.app-name }}
           sed -i "s/^\(\s*tag\s*:\s*\).*/\1'${{ inputs.env }}-${{ github.sha }}'/" values-${{ inputs.env }}.yaml
+
       - name: Commit and push changes to helm repository
         run: |
+          set -e
           cd gnoswap-helm-chart/
+
+          DEPLOY="deploy-${{ github.run_id }}-${{ inputs.app-name }}-${{ inputs.env }}"
+          TARGET="${{ inputs.env }}-${{ inputs.app-name }}"
+
           git config --global user.email "gnoswap@onbloc.xyz"
           git config --global user.name "onbloc"
+
           git add .
-          git commit -m "Pushed gnoswap-${{ inputs.app-name }}-${{ inputs.env }}:${{ github.sha }}"
-          git push origin deploy-${{ github.run_id }}-${{ inputs.app-name }}
-          git checkout ${{ inputs.env }}
-          git pull --rebase origin deploy-${{ github.run_id }}-${{ inputs.app-name }} || git rebase --abort
-          git push origin ${{ inputs.env }}
-          git branch -d deploy-${{ github.run_id }}-${{ inputs.app-name }}
-          git push origin --delete deploy-${{ github.run_id }}-${{ inputs.app-name }}
+          git commit -m "chore: bump $TARGET chart to ${{ github.sha }}"
+
+          git push origin "$DEPLOY"
+
+          git checkout "$TARGET"
+          git pull --rebase origin "$DEPLOY" || git rebase --abort
+          git push origin "$TARGET"
+
+          git branch -d "$DEPLOY"
+          git push origin --delete "$DEPLOY"
+
           echo "  ____                     _ "
           echo " |  _ \  ___  _ __   ___  | |"
           echo " | | | |/ _ \| '_ \ / _ \ | |"
