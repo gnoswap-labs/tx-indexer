@@ -18,29 +18,39 @@ jobs:
   helm_chart_push:
     runs-on: ubuntu-latest
     steps:
-      - name: Clone Repo gnoswap-helm-chart
+      - name: Resolve helm chart target
         run: |
-          echo ${{ secrets.PAT_TOKEN }}
-          git clone https://x-access-token:${{ secrets.PAT_TOKEN }}@github.com/gnoswap-labs/gnoswap-helm-chart.git gnoswap-helm-chart
+          # Update the image tag in the deployment helm chart repository.
+          # The target branch is derived from the "env" input.
+          BRANCH="${{ inputs.env }}"
+          BRANCH="${BRANCH%-gnoswap-v2}"
+          echo "REPO=gnoswap-helm-charts"         >> "$GITHUB_ENV"
+          echo "BRANCH=$BRANCH"                    >> "$GITHUB_ENV"
+          echo "CHART_PATH=${{ inputs.app-name }}" >> "$GITHUB_ENV"
+          echo "VALUES_FILE=values.yaml"          >> "$GITHUB_ENV"
 
-      - name: Make changes to gnoswap-helm-chart Repo
+      - name: Clone helm chart repo
         run: |
-          cd gnoswap-helm-chart/
-          git checkout -b deploy-${{ github.run_id }}-${{ inputs.app-name }} origin/${{ inputs.env }}
-          cd ${{ inputs.app-name }}
-          sed -i "s/^\(\s*tag\s*:\s*\).*/\1'${{ github.sha }}'/" values-${{ inputs.env }}.yaml
+          git clone https://x-access-token:${{ secrets.PAT_TOKEN }}@github.com/gnoswap-labs/${REPO}.git helm-repo
+
+      - name: Update image tag
+        run: |
+          cd helm-repo
+          git checkout -b deploy-${{ github.run_id }}-${{ inputs.app-name }} origin/$BRANCH
+          cd "$CHART_PATH"
+          sed -i "s/^\(\s*tag\s*:\s*\).*/\1'${{ github.sha }}'/" "$VALUES_FILE"
 
       - name: Commit and push changes to helm repository
         run: |
-          cd gnoswap-helm-chart/
+          cd helm-repo
           git config --global user.email "gnoswap@onbloc.xyz"
           git config --global user.name "onbloc"
           git add .
           git commit -m "Pushed gnoswap-${{ inputs.app-name }}-${{ inputs.env }}:${{ github.sha }}"
           git push origin deploy-${{ github.run_id }}-${{ inputs.app-name }}
-          git checkout ${{ inputs.env }}
+          git checkout $BRANCH
           git pull --rebase origin deploy-${{ github.run_id }}-${{ inputs.app-name }} || git rebase --abort
-          git push origin ${{ inputs.env }}
+          git push origin $BRANCH
           git branch -d deploy-${{ github.run_id }}-${{ inputs.app-name }}
           git push origin --delete deploy-${{ github.run_id }}-${{ inputs.app-name }}
           echo "  ____                     _ "
