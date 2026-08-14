@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - ".github/**"
+      - "**.md"
   workflow_dispatch:
 
 permissions:
@@ -16,6 +19,7 @@ jobs:
     with:
       app-name: 'tx-indexer'
       env: 'dev-gnoswap-v2'
+      helm-branch: "dev"
     secrets:
       AWS_IAM_OIDC: ${{ secrets.AWS_IAM_OIDC }}
       PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
