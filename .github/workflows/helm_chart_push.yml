@@ -46,7 +46,7 @@ jobs:
           git config --global user.email "gnoswap@onbloc.xyz"
           git config --global user.name "onbloc"
           git add .
-          git commit -m "Pushed gnoswap-${{ inputs.app-name }}-${{ inputs.env }}:${{ github.sha }}"
+          git commit -m "Pushed ${{ inputs.app-name }}-${{ inputs.env }}:${{ github.sha }}"
           git push origin deploy-${{ github.run_id }}-${{ inputs.app-name }}
           git checkout $BRANCH
           git pull --rebase origin deploy-${{ github.run_id }}-${{ inputs.app-name }} || git rebase --abort
