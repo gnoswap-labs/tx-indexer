@@ -7,6 +7,15 @@ on:
       env:
         required: true
         type: string
+      helm-branch:
+        required: true
+        type: string
+      network:
+        required: false
+        type: string
+      helm-values-file:
+        required: false
+        type: string
     secrets:
       AWS_IAM_OIDC:
         required: true
@@ -46,5 +55,8 @@ jobs:
     with:
       app-name: ${{ inputs.app-name }}
       env: ${{ inputs.env }}
+      helm-branch: ${{ inputs.helm-branch }}
+      network: ${{ inputs.network }}
+      helm-values-file: ${{ inputs.helm-values-file }}
     secrets:
       PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
