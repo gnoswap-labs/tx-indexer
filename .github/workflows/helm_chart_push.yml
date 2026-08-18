@@ -10,12 +10,6 @@ on:
       helm-branch:
         required: true
         type: string
-      network:
-        required: false
-        type: string
-      helm-values-file:
-        required: false
-        type: string
     secrets:
       PAT_TOKEN:
         required: true
@@ -33,14 +27,7 @@ jobs:
           echo "REPO=gnoswap-helm-charts"          >> "$GITHUB_ENV"
           echo "BRANCH=${{ inputs.helm-branch }}"  >> "$GITHUB_ENV"
           echo "CHART_PATH=${{ inputs.app-name }}" >> "$GITHUB_ENV"
-          # Precedence: helm-values-file > values-<network>.yaml > values.yaml
-          if [ -n "${{ inputs.helm-values-file }}" ]; then
-            echo "VALUES_FILE=${{ inputs.helm-values-file }}"    >> "$GITHUB_ENV"
-          elif [ -n "${{ inputs.network }}" ]; then
-            echo "VALUES_FILE=values-${{ inputs.network }}.yaml" >> "$GITHUB_ENV"
-          else
-            echo "VALUES_FILE=values.yaml"                       >> "$GITHUB_ENV"
-          fi
+          echo "VALUES_FILE=values.yaml"           >> "$GITHUB_ENV"
 
       - name: Clone helm chart repo
         run: |
@@ -59,7 +46,7 @@ jobs:
           git config --global user.email "gnoswap@onbloc.xyz"
           git config --global user.name "onbloc"
           git add .
-          git commit -m "Pushed gnoswap-${{ inputs.app-name }}-${{ inputs.env }}:${{ github.sha }}"
+          git commit -m "Pushed ${{ inputs.app-name }}-${{ inputs.env }}:${{ github.sha }}"
           git push origin deploy-${{ github.run_id }}-${{ inputs.app-name }}
           git checkout $BRANCH
           git pull --rebase origin deploy-${{ github.run_id }}-${{ inputs.app-name }} || git rebase --abort
